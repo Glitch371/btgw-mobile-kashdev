@@ -175,64 +175,96 @@ export default {
         font-size: 24px; cursor: pointer; flex-shrink: 0; pointer-events: auto !important;
       }
       
-      /* === FIX SPECIFICO POPUP "REGISTRO FAMA" === */
-      
-      /* 1. Nascondiamo l'overlay nero che blocca i click e la visuale */
-      .ui-widget-overlay, .modal-backdrop {
-        display: none !important; 
-        pointer-events: none !important;
-      }
-
-      /* 2. Trasformiamo il popup in un contenitore a schermo intero SCROLLABILE */
-      .mobile-popup-fix {
+      /* === FIX MODAL BOOTSTRAP === */
+      .modal.mobile-popup-fix {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        bottom: 50px !important; /* Lascia spazio alla navbar in basso */
+        bottom: 50px !important;
         width: 100% !important;
         height: auto !important;
-        
-        /* Questo è il segreto: overflow auto sul contenitore permette di spostare la visuale */
-        overflow: auto !important; 
+        max-height: 100vh !important;
+        overflow: auto !important;
         -webkit-overflow-scrolling: touch !important;
-
         margin: 0 !important;
-        padding: 20px !important; /* Un po' di margine interno */
-        background: #d8cdb6 !important; /* Sfondo del gioco */
+        padding: 0 !important;
+        background: #d8cdb6 !important;
         z-index: 999999 !important;
         transform: none !important;
         border: none !important;
-        border-bottom: 2px solid #e6b800 !important;
-      }
-      
-      /* 3. Forziamo il contenuto a mantenere la sua larghezza (non schiacciarsi) */
-      .mobile-popup-fix table, 
-      .mobile-popup-fix .ui-dialog-content {
-        width: auto !important;
-        min-width: 600px !important; /* Forza la larghezza così devi scrollare a destra */
-        max-width: none !important;
-        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
 
-      /* Sistemiamo il titolo dentro il popup per vederlo bene */
-      .mobile-popup-fix .ui-dialog-titlebar {
-         background: transparent !important;
-         border: none !important;
-         border-bottom: 1px solid #8d8679 !important;
-         margin-bottom: 10px !important;
+      .mobile-popup-fix .modal-content {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
       }
-      
-      /* Assicuriamoci che la X per chiudere sia visibile e cliccabile */
-      .mobile-popup-fix .ui-dialog-titlebar-close {
-         position: absolute !important;
-         right: 10px !important;
-         top: 10px !important;
-         border: 1px solid #000 !important;
-         background: #e6b800 !important;
-         width: 30px !important; height: 30px !important;
-         z-index: 1000 !important;
+
+      .mobile-popup-fix .modal-header {
+        background: transparent !important;
+        border-bottom: 1px solid #8d8679 !important;
+        padding: 10px !important;
+        flex-shrink: 0 !important;
       }
+
+      .mobile-popup-fix .modal-body {
+        flex: 1 !important;
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 10px !important;
+        background: #d8cdb6 !important;
+      }
+
+      .mobile-popup-fix .close {
+        position: absolute !important;
+        right: 10px !important;
+        top: 10px !important;
+        font-size: 24px !important;
+        color: #700 !important;
+        z-index: 1000 !important;
+      }
+
+      .mobile-popup-fix table, 
+      .mobile-popup-fix .box-mod {
+        width: 100% !important;
+        max-width: none !important;
+      }
+
+      /* RESPONSIVE: SCHERMO VERTICALE (PORTRAIT) */
+      @media screen and (orientation: portrait) {
+        .mobile-popup-fix .modal-body {
+          overflow-x: auto !important;
+          overflow-y: auto !important;
+        }
+      }
+
+      /* RESPONSIVE: SCHERMO ORIZZONTALE (LANDSCAPE) */
+      @media screen and (orientation: landscape) {
+        .mobile-popup-fix {
+          bottom: 35px !important;
+        }
+
+        .mobile-popup-fix .modal-header {
+          position: sticky !important;
+          top: 0 !important;
+          z-index: 1001 !important;
+          background: #a09785 !important;
+          padding: 10px !important;
+        }
+
+        .mobile-popup-fix .modal-body {
+          overflow-x: visible !important;
+          overflow-y: auto !important;
+        }
+      }
+
+
 
       /* === LANDSCAPE FIX V23 === */
       @media screen and (orientation: landscape) and (max-height: 500px) {
@@ -256,22 +288,36 @@ export default {
     document.addEventListener('DOMContentLoaded', function() {
       
       // === FIX POPUP/FAMA OBSERVER (MIRATO) ===
+      // === FIX POPUP/FAMA OBSERVER (VERSIONE GIUSTA) ===
       const popupObserver = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
           mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // È un elemento HTML
+            if (node.nodeType === 1) {
               const txt = node.innerText ? node.innerText.toUpperCase() : '';
-              
-              // Se troviamo la finestra del Registro Fama
+  
               if (txt.includes('REGISTRO FAMA') || txt.includes('TOTALE PUNTI FAMA')) {
-                 // Applichiamo la classe al contenitore principale del dialogo
-                 if (node.classList.contains('ui-dialog') || node.style.position === 'absolute' || node.style.position === 'fixed') {
-                    node.classList.add('mobile-popup-fix');
-                 } else {
-                    // Se l'elemento aggiunto è interno, risaliamo al genitore dialogo
-                    let parent = node.closest('.ui-dialog');
-                    if(parent) parent.classList.add('mobile-popup-fix');
-                 }
+                let modal = null;
+  
+                if (node.classList.contains('modal')) {
+                  modal = node;
+                } else {
+                  modal = node.closest('.modal');
+                }
+  
+                if (modal && !modal.classList.contains('mobile-popup-fix')) {
+                  modal.classList.add('mobile-popup-fix');
+                  console.log('✅ FAMA Modal');
+      
+                  // LISTENER PER CHIUDERE E RIAPRIRE
+                  const closeBtn = modal.querySelector('.close');
+                  if (closeBtn) {
+                    closeBtn.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      modal.classList.remove('mobile-popup-fix');
+                      $(modal).modal('hide');
+                    });
+                  }
+                }
               }
             }
           });
