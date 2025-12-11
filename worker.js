@@ -64,8 +64,8 @@ export default {
       .colonna_scheletro.dx.is-open { transform: translateX(0); }
       .toggle-arrow { display: none !important; }
 
-      /* MAPPA */
-      .mappa_body, .mappa_container { overflow: auto !important; background: #222 !important; }
+      /* MAPPA FIX SFONDO */
+      .mappa_body, .mappa_container { overflow: auto !important; background: #d8cdb6 !important; }
       #mappa { width: 100%; height: auto; max-width: none !important; }
       #location { overflow: visible !important; pointer-events: none; }
       #location > div { pointer-events: auto; z-index: 100; }
@@ -106,7 +106,7 @@ export default {
       }
       #new-mobile-toolbar img { width: 28px; height: 28px; pointer-events: none; }
 
-      /* POPUP GLOBALE */
+      /* POPUP GLOBALE (CHAT) */
       #global-popup-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.85);
@@ -120,7 +120,7 @@ export default {
         background: #a09785;
         border: 2px solid #e6b800; border-radius: 10px;
         padding: 5px; width: 95%; height: 85vh; 
-        overflow: hidden; /* No scroll, gestito internamente dal flex */
+        overflow: hidden; 
         color: #000; position: relative;
         box-shadow: 0 0 30px rgba(0,0,0,1);
         display: flex; flex-direction: column;
@@ -134,19 +134,15 @@ export default {
         line-height: 30px; text-align: center;
       }
 
-      /* FIX BLOCCO NOTE E CHAT OFF CON FLEXBOX */
+      /* FIX BLOCCO NOTE E CHAT OFF */
       #popup-inner .form_note, #popup-inner iframe, #popup-inner .texty {
         display: flex !important; flex-direction: column !important;
         flex: 1; border: 0 !important;
       }
-      /* Area di testo scrollabile */
       #popup-inner .form_note > div:first-child { flex: 1; overflow-y: auto; background: #fff; padding: 5px; }
-      /* Barra bottoni fissa */
       #popup-inner .form_note .clearfix { flex-shrink: 0; background: #c0b8a8; padding: 8px; border-top: 1px solid #888; }
-      /* Textarea occupa tutto lo spazio */
       #popup-inner textarea { height: 100% !important; width: 100% !important; resize: none; border: 0; }
       
-      /* MENU A TENDINA (Jutsu, etc) */
       #popup-inner .dropdown-menu { 
           display: block !important; position: static !important; 
           float: none !important; background: #222 !important; 
@@ -178,21 +174,78 @@ export default {
         border-radius: 4px; display: flex; align-items: center; justify-content: center;
         font-size: 24px; cursor: pointer; flex-shrink: 0; pointer-events: auto !important;
       }
+      
+      /* === FIX SPECIFICO POPUP "REGISTRO FAMA" === */
+      
+      /* 1. Nascondiamo l'overlay nero che blocca i click e la visuale */
+      .ui-widget-overlay, .modal-backdrop {
+        display: none !important; 
+        pointer-events: none !important;
+      }
+
+      /* 2. Trasformiamo il popup in un contenitore a schermo intero SCROLLABILE */
+      .mobile-popup-fix {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 50px !important; /* Lascia spazio alla navbar in basso */
+        width: 100% !important;
+        height: auto !important;
+        
+        /* Questo è il segreto: overflow auto sul contenitore permette di spostare la visuale */
+        overflow: auto !important; 
+        -webkit-overflow-scrolling: touch !important;
+
+        margin: 0 !important;
+        padding: 20px !important; /* Un po' di margine interno */
+        background: #d8cdb6 !important; /* Sfondo del gioco */
+        z-index: 999999 !important;
+        transform: none !important;
+        border: none !important;
+        border-bottom: 2px solid #e6b800 !important;
+      }
+      
+      /* 3. Forziamo il contenuto a mantenere la sua larghezza (non schiacciarsi) */
+      .mobile-popup-fix table, 
+      .mobile-popup-fix .ui-dialog-content {
+        width: auto !important;
+        min-width: 600px !important; /* Forza la larghezza così devi scrollare a destra */
+        max-width: none !important;
+        height: auto !important;
+      }
+
+      /* Sistemiamo il titolo dentro il popup per vederlo bene */
+      .mobile-popup-fix .ui-dialog-titlebar {
+         background: transparent !important;
+         border: none !important;
+         border-bottom: 1px solid #8d8679 !important;
+         margin-bottom: 10px !important;
+      }
+      
+      /* Assicuriamoci che la X per chiudere sia visibile e cliccabile */
+      .mobile-popup-fix .ui-dialog-titlebar-close {
+         position: absolute !important;
+         right: 10px !important;
+         top: 10px !important;
+         border: 1px solid #000 !important;
+         background: #e6b800 !important;
+         width: 30px !important; height: 30px !important;
+         z-index: 1000 !important;
+      }
 
       /* === LANDSCAPE FIX V23 === */
       @media screen and (orientation: landscape) and (max-height: 500px) {
-        /* L'header rimane visibile, non lo nascondiamo più */
         #mobile-nav-bar { height: 35px !important; }
         .colonna_scheletro { bottom: 35px !important; }
         #centro_scheletro { height: calc(100dvh - 35px) !important; }
-        
         #fields { padding: 2px !important; min-height: 40px !important; }
         input#azione, input#location, input#submit, #btn-tools-toggle { height: 32px !important; font-size: 12px; }
-        
-        /* Barra strumenti si posiziona SOPRA a quella input, senza sovrapporsi */
         #new-mobile-toolbar { bottom: 40px !important; height: 50px; }
-        
         #corpo { padding-bottom: 45px !important; }
+        
+        /* Adattamento popup in landscape */
+        .mobile-popup-fix { bottom: 35px !important; }
       }
     </style>
     `;
@@ -202,6 +255,30 @@ export default {
     <script>
     document.addEventListener('DOMContentLoaded', function() {
       
+      // === FIX POPUP/FAMA OBSERVER (MIRATO) ===
+      const popupObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          mutation.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) { // È un elemento HTML
+              const txt = node.innerText ? node.innerText.toUpperCase() : '';
+              
+              // Se troviamo la finestra del Registro Fama
+              if (txt.includes('REGISTRO FAMA') || txt.includes('TOTALE PUNTI FAMA')) {
+                 // Applichiamo la classe al contenitore principale del dialogo
+                 if (node.classList.contains('ui-dialog') || node.style.position === 'absolute' || node.style.position === 'fixed') {
+                    node.classList.add('mobile-popup-fix');
+                 } else {
+                    // Se l'elemento aggiunto è interno, risaliamo al genitore dialogo
+                    let parent = node.closest('.ui-dialog');
+                    if(parent) parent.classList.add('mobile-popup-fix');
+                 }
+              }
+            }
+          });
+        });
+      });
+      popupObserver.observe(document.body, { childList: true, subtree: true });
+
       // === LOGICA CHAT ===
       const fieldsBar = document.getElementById('fields');
       const oldSidebar = document.getElementById('chat_sidebar');
@@ -238,7 +315,7 @@ export default {
         popupClose.onclick = closePopup;
         overlay.onclick = function(e) { if(e.target === overlay) closePopup(); };
 
-        // 3. Estrai Icone (FIX DOPPIONI)
+        // 3. Estrai Icone
         const items = oldSidebar.querySelectorAll('.dropup');
         
         items.forEach(function(wrapper) {
@@ -249,19 +326,15 @@ export default {
             if (btn) {
                 const newIcon = document.createElement('div');
                 newIcon.className = 't-icon';
-                
-                // Copia ID e classi per lo stile CSS originale
                 newIcon.className = 't-icon ' + btn.className.replace('btn-chat','');
                 if(btn.id) newIcon.id = btn.id;
                 
-                // Copia il contenuto del bottone (l'immagine)
                 if(btn.innerHTML.trim() !== '') {
                     newIcon.innerHTML = btn.innerHTML;
                 }
                 
                 newToolbar.appendChild(newIcon);
                 
-                // CLICK: Sposta fisicamente l'elemento nel popup
                 newIcon.onclick = function() {
                     if(activeElement) closePopup();
                     
